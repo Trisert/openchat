@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types/chat';
-import { Bot, User, Loader2 } from 'lucide-react';
+import { Bot, User, Loader2, Copy, Check } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -14,6 +15,17 @@ interface MessageBubbleProps {
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const isStreaming = message.isStreaming;
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, codeId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCode(codeId);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   return (
     <div
@@ -62,12 +74,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                           </code>
                         );
                       }
+                      
+                      const language = props.className?.replace('language-', '') || '';
+                      const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
+                      const codeContent = props.children;
+                      
                       return (
-                        <pre className="bg-muted p-2 rounded-md overflow-x-auto">
-                          <code {...props}>
-                            {props.children}
-                          </code>
-                        </pre>
+                        <div className="relative group">
+                          <div className="flex items-center justify-between bg-muted border-b border-border px-4 py-2 text-xs text-muted-foreground rounded-t-md">
+                            <span className="font-medium">{language || 'plaintext'}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => copyToClipboard(String(codeContent), codeId)}
+                            >
+                              {copiedCode === codeId ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </div>
+                          <pre className="bg-muted p-4 rounded-b-md overflow-x-auto text-sm">
+                            <code 
+                              className={`font-mono ${language ? `language-${language}` : ''}`}
+                              {...props}
+                            >
+                              {codeContent}
+                            </code>
+                          </pre>
+                        </div>
                       );
                     },
                     ul: (props: any) => (
