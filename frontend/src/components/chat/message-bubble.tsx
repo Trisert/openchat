@@ -30,7 +30,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   return (
     <div
       className={cn(
-        'flex gap-3 p-4 w-full',
+        'flex gap-3 p-4 w-full group',
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
@@ -42,34 +42,34 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       
       <Card
         className={cn(
-          'max-w-[70%] p-3 shadow-sm',
+          'max-w-[70%] p-3 shadow-sm relative',
           isUser
             ? 'bg-primary text-primary-foreground ml-auto'
             : 'bg-muted',
           isStreaming && 'border-primary/50'
         )}
       >
+        {/* Copy button outside message content */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="absolute top-2 right-2 h-6 w-6 p-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity rounded z-10"
+          onClick={() => copyToClipboard(message.content, `${message.role}-${message.id}`)}
+          title={`Copy ${isUser ? 'message' : 'code'}`}
+        >
+          {copiedCode === `${message.role}-${message.id}` ? (
+            <Check className="w-3 h-3" />
+          ) : (
+            <Copy className="w-3 h-3" />
+          )}
+        </Button>
+        
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             {isUser ? (
-              <div className="group relative pr-8">
-                <p className="text-sm whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="absolute top-0 right-0 h-6 w-6 p-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                  onClick={() => copyToClipboard(message.content, `user-${message.id}`)}
-                  title="Copy message"
-                >
-                  {copiedCode === `user-${message.id}` ? (
-                    <Check className="w-3 h-3" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
+              <p className="text-sm whitespace-pre-wrap break-words">
+                {message.content}
+              </p>
             ) : (
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown
