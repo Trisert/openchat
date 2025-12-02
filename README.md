@@ -24,7 +24,7 @@ A modern, minimalistic web UI for chatting with AI models running on LLaMA.cpp s
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone git@github.com:Trisert/openchat.git
 cd openchat
 ```
 
