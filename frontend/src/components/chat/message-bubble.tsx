@@ -49,20 +49,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           isStreaming && 'border-primary/50'
         )}
       >
-        {/* Copy button outside message content */}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="absolute top-2 right-2 h-6 w-6 p-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity rounded z-10"
-          onClick={() => copyToClipboard(message.content, `${message.role}-${message.id}`)}
-          title={`Copy ${isUser ? 'message' : 'code'}`}
-        >
-          {copiedCode === `${message.role}-${message.id}` ? (
-            <Check className="w-3 h-3" />
-          ) : (
-            <Copy className="w-3 h-3" />
-          )}
-        </Button>
+        {/* Copy button inside message bubble */}
+        {isUser && (
+          <div className="flex items-start gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity rounded flex-shrink-0"
+              onClick={() => copyToClipboard(message.content, `${message.role}-${message.id}`)}
+              title="Copy message"
+            >
+              {copiedCode === `${message.role}-${message.id}` ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </Button>
+            <p className="text-sm whitespace-pre-wrap break-words flex-1 min-w-0">
+              {message.content}
+            </p>
+          </div>
+        )}
         
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
