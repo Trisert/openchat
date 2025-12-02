@@ -26,6 +26,8 @@ interface ChatStore {
   
   // Server history
   serverHistory: string[];
+  lastConnectedServer: string;
+  autoReconnect: boolean;
   
   // Actions
   addMessage: (messageData: Omit<Message, 'id' | 'timestamp'>) => Message;
@@ -62,6 +64,10 @@ interface ChatStore {
   addToServerHistory: (serverUrl: string) => void;
   removeFromServerHistory: (serverUrl: string) => void;
   clearServerHistory: () => void;
+  
+  // Auto-reconnection actions
+  setLastConnectedServer: (serverUrl: string) => void;
+  setAutoReconnect: (enabled: boolean) => void;
 }
 
 const defaultChatSettings: ChatSettings = {
@@ -95,6 +101,28 @@ const loadServerHistory = (): string[] => {
   }
 };
 
+// Load last connected server from localStorage
+const loadLastConnectedServer = (): string => {
+  if (typeof window === 'undefined') return '';
+  try {
+    const saved = localStorage.getItem('openchat-last-connected-server');
+    return saved || '';
+  } catch {
+    return '';
+  }
+};
+
+// Load auto-reconnect setting from localStorage
+const loadAutoReconnect = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const saved = localStorage.getItem('openchat-auto-reconnect');
+    return saved === 'true';
+  } catch {
+    return false;
+  }
+};
+
 export const useChatStore = create<ChatStore>((set, get) => ({
   // Initial state
   messages: [],
@@ -118,6 +146,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   
   // Server history initial state
   serverHistory: loadServerHistory(),
+  lastConnectedServer: loadLastConnectedServer(),
+  autoReconnect: loadAutoReconnect(),
 
   // Message actions
   addMessage: (messageData) => {
@@ -342,5 +372,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   clearServerHistory: () => {
     set({ serverHistory: [] });
     localStorage.removeItem('openchat-server-history');
+  },
+  
+  // Auto-reconnection actions
+  setLastConnectedServer: (serverUrl) => {
+    set({ lastConnectedServer: serverUrl });
+    localStorage.setItem('openchat-last-connected-server', serverUrl);
+  },
+  
+  setAutoReconnect: (enabled) => {
+    set({ autoReconnect: enabled });
+    localStorage.setItem('openchat-auto-reconnect', enabled.toString());
   },
 }));

@@ -9,7 +9,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     connectionState, 
     isConnecting, 
     setConnectionState, 
-    setIsConnecting 
+    setIsConnecting,
+    lastConnectedServer,
+    autoReconnect
   } = useChatStore();
   
   const wsRef = useRef<WebSocket | null>(null);
@@ -146,6 +148,24 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const offMessage = useCallback((type: string) => {
     messageHandlersRef.current.delete(type);
   }, []);
+
+  // Auto-reconnection logic
+  useEffect(() => {
+    // Only attempt auto-reconnect if:
+    // 1. Auto-reconnect is enabled
+    // 2. We have a last connected server
+    // 3. We're not currently connected
+    // 4. We're not currently connecting
+    if (autoReconnect && lastConnectedServer && !connectionState.connected && !isConnecting) {
+      // Small delay to ensure the app is fully loaded
+      const timer = setTimeout(() => {
+        console.log('Attempting auto-reconnection to:', lastConnectedServer);
+        connect(lastConnectedServer);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [autoReconnect, lastConnectedServer, connectionState.connected, isConnecting, connect]);
 
   // Make WebSocket functions available globally
   useEffect(() => {

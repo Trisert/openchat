@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { useChatStore } from '@/stores/chat-store';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { Wifi, WifiOff, Loader2, History, X, Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface ConnectionSettingsProps {
   showTitle?: boolean;
@@ -23,7 +24,11 @@ export const ConnectionSettings: React.FC<ConnectionSettingsProps> = ({
     serverHistory, 
     addToServerHistory, 
     removeFromServerHistory, 
-    clearServerHistory 
+    clearServerHistory,
+    lastConnectedServer,
+    autoReconnect,
+    setLastConnectedServer,
+    setAutoReconnect
   } = useChatStore();
 
   // Initialize server URL from current connection or first history item
@@ -42,6 +47,7 @@ export const ConnectionSettings: React.FC<ConnectionSettingsProps> = ({
     
     await connect(serverUrl.trim());
     addToServerHistory(serverUrl.trim());
+    setLastConnectedServer(serverUrl.trim());
   };
 
   const handleDisconnect = async () => {
@@ -61,6 +67,7 @@ export const ConnectionSettings: React.FC<ConnectionSettingsProps> = ({
     setServerUrl(url);
     connect(url);
     addToServerHistory(url);
+    setLastConnectedServer(url);
   };
 
   if (compact) {
@@ -216,8 +223,27 @@ export const ConnectionSettings: React.FC<ConnectionSettingsProps> = ({
               </Card>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
+       </div>
+       )}
+
+       {/* Auto-Reconnect Setting */}
+       <div className="space-y-2">
+         <div className="flex items-center justify-between">
+           <label className="text-sm font-medium">Auto-Reconnect</label>
+           <Switch
+             checked={autoReconnect}
+             onCheckedChange={setAutoReconnect}
+           />
+         </div>
+         <p className="text-xs text-muted-foreground">
+           Automatically connect to the last used server when the application starts
+         </p>
+         {lastConnectedServer && (
+           <p className="text-xs text-muted-foreground">
+             Last server: {lastConnectedServer}
+           </p>
+         )}
+       </div>
+     </div>
+   );
+ };
