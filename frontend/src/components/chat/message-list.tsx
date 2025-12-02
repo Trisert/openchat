@@ -18,7 +18,15 @@ export const MessageList: React.FC = () => {
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1" />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-6xl mb-4">💬</div>
+          <h2 className="text-2xl font-semibold text-foreground">Start a conversation</h2>
+          <p className="text-muted-foreground max-w-md">
+            Connect to a server and send your first message to begin chatting with AI
+          </p>
+        </div>
+      </div>
     );
   }
 
