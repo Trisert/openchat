@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenChat - LLaMA.cpp Chat Interface</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="icon-button hamburger-menu" aria-label="Toggle sidebar">
+                        <span class="hamburger-icon">☰</span>
+                    </button>
+                    <h1 class="app-title">OpenChat</h1>
+                </div>
+                <div class="header-controls">
+                    <button id="theme-toggle" class="icon-button" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <button id="settings-btn" class="icon-button" aria-label="Settings">
+                        <span>⚙️</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-content">
+                    <!-- Server Configuration -->
+                    <div class="server-config">
+                        <h3>Server Configuration</h3>
+                        <form id="server-form" class="config-form">
+                    <div class="form-group">
+                        <label for="server-url">Server URL</label>
+                        <input type="url" id="server-url" placeholder="http://localhost:8080" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Connect</button>
+                        </form>
+                        <div class="connection-status" id="connection-status">
+                            <span class="status-indicator disconnected"></span>
+                            <span class="status-text">Disconnected</span>
+                        </div>
+                    </div>
+
+                    <!-- Chat History -->
+                    <div class="chat-history-section">
+                        <div class="section-header">
+                            <h3>Chat History</h3>
+                            <button id="new-chat" class="btn btn-primary btn-sm">New Chat</button>
+                        </div>
+                        
+                        <!-- Search -->
+                        <div class="search-container">
+                            <input type="text" id="chat-search" placeholder="Search conversations..." class="search-input">
+                            <button class="search-btn" id="search-btn">🔍</button>
+                        </div>
+
+                        <!-- Conversation List -->
+                        <div class="conversation-list" id="conversation-list">
+                            <div class="conversation-item active" data-id="current">
+                                <div class="conversation-preview">
+                                    <h4 class="conversation-title">Current Chat</h4>
+                                    <p class="conversation-snippet">Start a conversation...</p>
+                                </div>
+                                <div class="conversation-meta">
+                                    <span class="conversation-time">Now</span>
+                                    <span class="conversation-count">0 messages</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="chat-actions">
+                            <button id="clear-history" class="btn btn-danger btn-sm">Clear All</button>
+                            <button id="export-chat" class="btn btn-secondary btn-sm">Export</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <section class="chat-area">
+                <div class="messages-container" id="messages-container">
+                    <div class="welcome-message">
+                        <h2>Welcome to OpenChat</h2>
+                        <p>Connect to a LLaMA.cpp server to start chatting with AI models.</p>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span class="typing-text">AI is typing...</span>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <form id="message-form" class="message-form">
+                        <div class="input-container">
+                            <div class="input-wrapper">
+                                <textarea 
+                                    id="message-input" 
+                                    placeholder="Connect to a server first..." 
+                                    rows="1"
+                                    maxlength="4000"
+                                    disabled
+                                ></textarea>
+                                
+                                <!-- Input Actions -->
+                                <div class="input-actions">
+                                    <button type="button" id="attach-btn" class="action-btn" title="Attach file">
+                                        📎
+                                    </button>
+                                    <button type="button" id="voice-btn" class="action-btn" title="Voice input">
+                                        🎤
+                                    </button>
+                                    <button type="button" id="emoji-btn" class="action-btn" title="Add emoji">
+                                        😊
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" id="send-btn" class="btn btn-send" disabled>
+                                <span>Send</span>
+                                <span class="send-icon">→</span>
+                            </button>
+                        </div>
+                        
+                        <!-- File Input (Hidden) -->
+                        <input type="file" id="file-input" accept="image/*,.txt,.md,.json" multiple style="display: none;">
+                        
+                        <!-- Voice Recording Indicator -->
+                        <div class="voice-indicator" id="voice-indicator" style="display: none;">
+                            <div class="voice-pulse"></div>
+                            <span>Recording...</span>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Command Palette -->
+        <div class="command-palette" id="command-palette">
+            <div class="command-palette-content">
+                <div class="command-search">
+                    <input type="text" id="command-input" placeholder="Type a command or search..." autocomplete="off">
+                </div>
+                <div class="command-list" id="command-list">
+                    <div class="command-item" data-command="new-chat">
+                        <span class="command-icon">💬</span>
+                        <div class="command-info">
+                            <div class="command-name">New Chat</div>
+                            <div class="command-desc">Start a new conversation</div>
+                        </div>
+                        <div class="command-shortcut">Ctrl+K</div>
+                    </div>
+                    <div class="command-item" data-command="clear-history">
+                        <span class="command-icon">🗑️</span>
+                        <div class="command-info">
+                            <div class="command-name">Clear History</div>
+                            <div class="command-desc">Clear all conversations</div>
+                        </div>
+                        <div class="command-shortcut">Ctrl+Shift+C</div>
+                    </div>
+                    <div class="command-item" data-command="export-chat">
+                        <span class="command-icon">📤</span>
+                        <div class="command-info">
+                            <div class="command-name">Export Chat</div>
+                            <div class="command-desc">Export current conversation</div>
+                        </div>
+                        <div class="command-shortcut">Ctrl+E</div>
+                    </div>
+                    <div class="command-item" data-command="toggle-theme">
+                        <span class="command-icon">🌓</span>
+                        <div class="command-info">
+                            <div class="command-name">Toggle Theme</div>
+                            <div class="command-desc">Switch between light and dark mode</div>
+                        </div>
+                        <div class="command-shortcut">Ctrl+T</div>
+                    </div>
+                    <div class="command-item" data-command="settings">
+                        <span class="command-icon">⚙️</span>
+                        <div class="command-info">
+                            <div class="command-name">Settings</div>
+                            <div class="command-desc">Open settings modal</div>
+                        </div>
+                        <div class="command-shortcut">Ctrl+,</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settings-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button class="modal-close" id="settings-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Theme Tabs -->
+                    <div class="theme-tabs">
+                        <button class="theme-tab active" data-tab="general">General</button>
+                        <button class="theme-tab" data-tab="colors">Colors</button>
+                        <button class="theme-tab" data-tab="advanced">Advanced</button>
+                    </div>
+
+                    <!-- General Settings -->
+                    <div class="theme-panel active" id="general-panel">
+                        <div class="setting-group">
+                            <label for="temperature">Temperature</label>
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                            <span id="temperature-value">0.7</span>
+                        </div>
+                        <div class="setting-group">
+                            <label for="max-tokens">Max Tokens</label>
+                            <input type="number" id="max-tokens" min="1" max="4096" value="2048">
+                        </div>
+                        <div class="setting-group">
+                            <label for="top-p">Top P</label>
+                            <input type="range" id="top-p" min="0" max="1" step="0.05" value="0.9">
+                            <span id="top-p-value">0.9</span>
+                        </div>
+                    </div>
+
+                    <!-- Color Settings -->
+                    <div class="theme-panel" id="colors-panel">
+                        <div class="color-section">
+                            <h4>Primary Colors</h4>
+                            <div class="color-grid">
+                                <div class="color-input-group">
+                                    <label for="primary-bg">Background</label>
+                                    <input type="color" id="primary-bg" value="#fafbfc">
+                                </div>
+                                <div class="color-input-group">
+                                    <label for="primary-text">Text</label>
+                                    <input type="color" id="primary-text" value="#1f2937">
+                                </div>
+                                <div class="color-input-group">
+                                    <label for="accent-color">Accent</label>
+                                    <input type="color" id="accent-color" value="#3b82f6">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="color-section">
+                            <h4>Preview</h4>
+                            <div class="theme-preview" id="theme-preview">
+                                <div class="preview-message user">
+                                    <span>This is a user message preview</span>
+                                </div>
+                                <div class="preview-message assistant">
+                                    <span>This is an assistant message with **bold** and *italic* text</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="theme-actions">
+                            <button class="btn btn-secondary" onclick="app.resetThemeColors()">Reset to Default</button>
+                            <button class="btn btn-primary" onclick="app.saveCustomTheme()">Save Theme</button>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="theme-panel" id="advanced-panel">
+                        <div class="setting-group">
+                            <label for="font-size">Font Size</label>
+                            <input type="range" id="font-size" min="12" max="20" value="16">
+                            <span id="font-size-value">16px</span>
+                        </div>
+                        <div class="setting-group">
+                            <label for="border-radius">Border Radius</label>
+                            <input type="range" id="border-radius" min="4" max="20" value="12">
+                            <span id="border-radius-value">12px</span>
+                        </div>
+                        <div class="setting-group">
+                            <label>
+                                <input type="checkbox" id="enable-animations" checked>
+                                Enable animations
+                            </label>
+                        </div>
+                        <div class="setting-group">
+                            <label>
+                                <input type="checkbox" id="compact-mode">
+                                Compact mode
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

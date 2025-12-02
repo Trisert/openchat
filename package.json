@@ -1,0 +1,23 @@
+{
+  "name": "openchat",
+  "version": "1.0.0",
+  "description": "Modern minimalistic web UI for chatting with llama.cpp models",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "build": "bun build src/server.ts --outdir ./dist --target bun",
+    "start": "bun dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'No linter configured'",
+    "test": "echo 'No tests configured'"
+  },
+  "dependencies": {
+    "elysia": "^1.4.16",
+    "@elysiajs/websocket": "^0.2.8",
+    "@elysiajs/static": "^1.4.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "bun-types": "latest"
+  }
+}
