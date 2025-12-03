@@ -12,6 +12,7 @@ export class ChatTemplateManager {
     'zephyr': ChatTemplateManager.zephyrTemplate,
     'monarch': ChatTemplateManager.monarchTemplate,
     'openchat': ChatTemplateManager.openchatTemplate,
+    'qwen': ChatTemplateManager.qwenTemplate,
   };
 
   static formatMessages(messages: LlamaMessage[], templateType: string = 'chatml'): string {
@@ -21,7 +22,8 @@ export class ChatTemplateManager {
 
   static detectTemplateType(modelName: string): string {
     const name = modelName.toLowerCase();
-    
+
+    if (name.includes('qwen')) return 'qwen';
     if (name.includes('llama-3') || name.includes('llama3')) return 'llama3';
     if (name.includes('mistral')) return 'mistral';
     if (name.includes('vicuna')) return 'vicuna';
@@ -31,7 +33,7 @@ export class ChatTemplateManager {
     if (name.includes('zephyr')) return 'zephyr';
     if (name.includes('monarch')) return 'monarch';
     if (name.includes('openchat')) return 'openchat';
-    
+
     return 'chatml'; // Default fallback
   }
 
@@ -182,7 +184,7 @@ export class ChatTemplateManager {
 
   private static openchatTemplate(messages: LlamaMessage[]): string {
     let result = '';
-    
+
     for (const message of messages) {
       if (message.role === 'system') {
         result += `GPT4 Correct System: ${message.content}<|end_of_turn|>`;
@@ -192,8 +194,19 @@ export class ChatTemplateManager {
         result += `GPT4 Correct Assistant: ${message.content}<|end_of_turn|>`;
       }
     }
-    
+
     result += 'GPT4 Correct Assistant: ';
+    return result;
+  }
+
+  private static qwenTemplate(messages: LlamaMessage[]): string {
+    let result = '';
+
+    for (const message of messages) {
+      result += `<|im_start|>${message.role}\n${message.content.trim()}<|im_end|>\n`;
+    }
+
+    result += '<|im_start|>assistant\n';
     return result;
   }
 }

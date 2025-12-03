@@ -161,6 +161,26 @@ export class LlamaService {
   }
 
   private getSystemPromptWithTools(): string {
+    const modelName = this.model.toLowerCase();
+
+    if (modelName.includes('qwen')) {
+      return `You are a helpful AI assistant with access to web search tools.
+
+When you need current information, up-to-date data, or to verify facts, you can use the web_search tool.
+
+To use a tool, respond with the following format:
+<tool_call>
+{"name": "web_search", "arguments": {"query": "your search query here"}}
+</tool_call>
+
+After receiving tool results, continue your response naturally incorporating the information.
+
+Available tools:
+- web_search: Search the web for current information
+  Parameters: {"query": "search query string"}`;
+    }
+
+    // Default format for other models (LLaMA, etc.)
     return `You are a helpful AI assistant with access to web search tools.
 
 When you need current information, up-to-date data, or to verify facts, you can use the web_search tool.
@@ -178,13 +198,35 @@ Available tools:
   }
 
   private extractToolCall(response: string): { tool: string; query: string } | null {
-    const toolCallMatch = response.match(/TOOL_CALL:\s*(\w+)\s*QUERY:\s*(.+)/i);
-    if (toolCallMatch) {
+    const modelName = this.model.toLowerCase();
+
+    // Qwen format: <tool_call>{"name": "web_search", "arguments": {"query": "..."}}</tool_call>
+    if (modelName.includes('qwen')) {
+      const qwenMatch = response.match(/<tool_call>\s*(\{[^}]+\})\s*<\/tool_call>/i);
+      if (qwenMatch) {
+        try {
+          const toolCall = JSON.parse(qwenMatch[1]);
+          if (toolCall.name === 'web_search' && toolCall.arguments?.query) {
+            return {
+              tool: toolCall.name,
+              query: toolCall.arguments.query
+            };
+          }
+        } catch (e) {
+          console.error('Failed to parse Qwen tool call:', e);
+        }
+      }
+    }
+
+    // Default format: TOOL_CALL: web_search QUERY: [query]
+    const defaultMatch = response.match(/TOOL_CALL:\s*(\w+)\s*QUERY:\s*(.+)/i);
+    if (defaultMatch) {
       return {
-        tool: toolCallMatch[1].toLowerCase(),
-        query: toolCallMatch[2].trim()
+        tool: defaultMatch[1].toLowerCase(),
+        query: defaultMatch[2].trim()
       };
     }
+
     return null;
   }
 
