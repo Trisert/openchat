@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useWebSocket } from '@/hooks/use-websocket';
 import { useStreamingMessage } from '@/hooks/use-streaming-message';
 import { useChatStore } from '@/stores/chat-store';
-import { Send, Square, Paperclip, Mic, Smile, WifiOff, Loader2 } from 'lucide-react';
+import { Send, Square, Paperclip, Mic, Smile } from 'lucide-react';
 
 export const MessageInput: React.FC = () => {
   const [message, setMessage] = useState('');
@@ -14,7 +14,7 @@ export const MessageInput: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { connectionState, isConnecting } = useWebSocket();
+  const { connectionState, connect, disconnect } = useWebSocket();
   const { isStreaming, startStreaming, stopStreaming } = useStreamingMessage();
   const { chatSettings } = useChatStore();
 
@@ -98,15 +98,7 @@ export const MessageInput: React.FC = () => {
     }
   };
 
-  const handleQuickConnectionToggle = async () => {
-    if (connectionState.connected) {
-      await disconnect();
-    } else {
-      // Try to connect to the last known server or default
-      const serverUrl = connectionState.serverUrl || 'http://localhost:8080';
-      await connect(serverUrl);
-    }
-  };
+
 
   // Auto-focus on mount
   useEffect(() => {
