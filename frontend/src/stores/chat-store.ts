@@ -74,6 +74,7 @@ const defaultChatSettings: ChatSettings = {
   temperature: 0.7,
   max_tokens: 2048,
   top_p: 0.9,
+  webSearchEnabled: false,
 };
 
 const defaultTheme: ThemeConfig = {

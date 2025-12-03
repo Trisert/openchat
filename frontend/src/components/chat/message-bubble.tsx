@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types/chat';
-import { Bot, User, Loader2, Copy, Check } from 'lucide-react';
+import { Bot, User, Loader2, Copy, Check, Globe } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -35,8 +35,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       )}
     >
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 flex flex-col items-center gap-1">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-primary" />
+          </div>
+          {message.webSearchUsed && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Globe className="w-3 h-3" />
+              <span>Web</span>
+            </div>
+          )}
         </div>
       )}
 

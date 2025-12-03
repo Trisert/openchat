@@ -60,19 +60,32 @@ export function SettingsDialog() {
               <span className="text-sm text-muted-foreground">{chatSettings.max_tokens}</span>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Top P</label>
-              <Slider
-                value={[chatSettings.top_p]}
-                onValueChange={([value]) => updateChatSettings({ top_p: value })}
-                max={1}
-                min={0}
-                step={0.05}
-                className="w-full"
-              />
-              <span className="text-sm text-muted-foreground">{chatSettings.top_p}</span>
-            </div>
-          </TabsContent>
+             <div className="space-y-2">
+               <label className="text-sm font-medium">Top P</label>
+               <Slider
+                 value={[chatSettings.top_p]}
+                 onValueChange={([value]) => updateChatSettings({ top_p: value })}
+                 max={1}
+                 min={0}
+                 step={0.05}
+                 className="w-full"
+               />
+               <span className="text-sm text-muted-foreground">{chatSettings.top_p}</span>
+             </div>
+
+             <div className="space-y-2">
+               <div className="flex items-center justify-between">
+                 <div>
+                   <label className="text-sm font-medium">Web Search</label>
+                   <p className="text-xs text-muted-foreground">Allow AI to search the web for current information</p>
+                 </div>
+                 <Switch
+                   checked={chatSettings.webSearchEnabled}
+                   onCheckedChange={(checked) => updateChatSettings({ webSearchEnabled: checked })}
+                 />
+               </div>
+             </div>
+           </TabsContent>
           
           <TabsContent value="appearance" className="space-y-4">
             <div className="space-y-2">

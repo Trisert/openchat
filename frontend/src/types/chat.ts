@@ -56,6 +56,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  webSearchUsed?: boolean;
 }
 
 export interface Conversation {
@@ -74,6 +75,7 @@ export interface ChatSettings {
   repeat_penalty?: number;
   seed?: number;
   stop?: string[];
+  webSearchEnabled: boolean;
 }
 
 export interface ThemeConfig {
@@ -103,4 +105,6 @@ export interface WebSocketMessage {
   content?: string;
   serverUrl?: string;
   options?: ChatOptions;
+  enableWebSearch?: boolean;
+  webSearchUsed?: boolean;
 }

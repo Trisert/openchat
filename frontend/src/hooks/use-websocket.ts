@@ -28,12 +28,12 @@ export const useWebSocket = () => {
     await api.disconnect();
   }, []);
 
-  const sendMessage = useCallback((message: string, options?: ChatOptions) => {
+  const sendMessage = useCallback((message: string, options?: ChatOptions, enableWebSearch?: boolean) => {
     const api = (window as any).websocketAPI;
     if (!api) {
       throw new Error('WebSocket provider not initialized');
     }
-    return api.sendMessage(message, options);
+    return api.sendMessage(message, options, enableWebSearch);
   }, []);
 
   const onMessage = useCallback((type: string, handler: (data: any) => void) => {

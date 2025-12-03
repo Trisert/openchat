@@ -29,7 +29,7 @@ export const MessageInput: React.FC = () => {
       textareaRef.current.style.height = 'auto';
     }
 
-    await startStreaming(messageContent, chatSettings);
+    await startStreaming(messageContent, chatSettings, chatSettings.webSearchEnabled);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

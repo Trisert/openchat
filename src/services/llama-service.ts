@@ -1,10 +1,16 @@
 import { LlamaMessage, ChatOptions, CompletionRequest } from "../types/chat"
 import { ChatTemplateManager } from "./chat-template-manager";
+import { WebSearchService } from "./web-search-service";
 
 export class LlamaService {
   private serverUrl: string = '';
   private model: string = '';
   private isConnected: boolean = false;
+  private webSearchService: WebSearchService | null = null;
+
+  setWebSearchService(service: WebSearchService): void {
+    this.webSearchService = service;
+  }
 
   async connect(serverUrl: string, model: string = 'default'): Promise<boolean> {
     try {
@@ -56,53 +62,147 @@ export class LlamaService {
     }
   }
 
-  async sendMessage(message: string, options: ChatOptions = {}): Promise<AsyncIterable<string>> {
+  async sendMessage(message: string, options: ChatOptions = {}, enableWebSearch: boolean = false): Promise<AsyncIterable<string>> {
     if (!this.isConnected || !this.serverUrl) {
       throw new Error('Not connected to server');
     }
 
-    const messages: LlamaMessage[] = [
-      { role: 'user', content: message }
-    ];
+    // Build conversation with tool calling instructions if web search is enabled
+    const systemPrompt = enableWebSearch ? this.getSystemPromptWithTools() : '';
+    const conversation: LlamaMessage[] = [];
 
-    const templateType = ChatTemplateManager.detectTemplateType(this.model);
-    const prompt = ChatTemplateManager.formatMessages(messages, templateType);
-
-    const requestBody: CompletionRequest = {
-      prompt,
-      temperature: options.temperature || 0.7,
-      max_tokens: options.max_tokens || 2048,
-      top_p: options.top_p || 0.9,
-      top_k: options.top_k,
-      repeat_penalty: options.repeat_penalty,
-      seed: options.seed,
-      stop: options.stop,
-      stream: true
-    };
-
-    console.log('Sending request to:', `${this.serverUrl}/completion`);
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
-
-    const response = await fetch(`${this.serverUrl}/completion`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(60000)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('HTTP error:', response.status, errorText);
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+    if (systemPrompt) {
+      conversation.push({ role: 'system', content: systemPrompt });
     }
 
-    if (!response.body) {
-      throw new Error('Response body is null');
+    conversation.push({ role: 'user', content: message });
+
+    // Handle tool calling loop
+    let maxToolCalls = 3; // Prevent infinite loops
+    let toolCallCount = 0;
+
+    while (toolCallCount < maxToolCalls) {
+      const templateType = ChatTemplateManager.detectTemplateType(this.model);
+      const prompt = ChatTemplateManager.formatMessages(conversation, templateType);
+
+      const requestBody: CompletionRequest = {
+        prompt,
+        temperature: options.temperature || 0.7,
+        max_tokens: options.max_tokens || 2048,
+        top_p: options.top_p || 0.9,
+        top_k: options.top_k,
+        repeat_penalty: options.repeat_penalty,
+        seed: options.seed,
+        stop: options.stop,
+        stream: true
+      };
+
+      console.log('Sending request to:', `${this.serverUrl}/completion`);
+      console.log('Conversation length:', conversation.length);
+
+      const response = await fetch(`${this.serverUrl}/completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(60000)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('HTTP error:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      // Collect the full response to check for tool calls
+      let fullResponse = '';
+      const chunks: string[] = [];
+
+      for await (const chunk of this.parseStream(response.body)) {
+        fullResponse += chunk;
+        chunks.push(chunk);
+      }
+
+      // Check if the response contains a tool call
+      const toolCall = this.extractToolCall(fullResponse);
+      if (toolCall && enableWebSearch) {
+        toolCallCount++;
+        console.log('Detected tool call:', toolCall);
+
+        // Execute the tool
+        const toolResult = await this.executeTool(toolCall);
+
+        // Add the tool result to the conversation
+        conversation.push({
+          role: 'assistant',
+          content: fullResponse
+        });
+
+        conversation.push({
+          role: 'user',
+          content: `Tool result: ${toolResult}`
+        });
+
+        // Continue the loop for another AI response
+        continue;
+      } else {
+        // No tool call or web search disabled, return the response
+        return this.createAsyncIterable(chunks);
+      }
     }
 
-    return this.parseStream(response.body);
+    // If we exit the loop, return the last response
+    return this.createAsyncIterable([]);
+  }
+
+  private getSystemPromptWithTools(): string {
+    return `You are a helpful AI assistant with access to web search tools.
+
+When you need current information, up-to-date data, or to verify facts, you can use the web_search tool.
+
+To use a tool, respond with the following format:
+TOOL_CALL: web_search
+QUERY: [your search query here]
+
+After receiving tool results, continue your response naturally incorporating the information.
+
+Available tools:
+- web_search: Search the web for current information
+  Format: TOOL_CALL: web_search
+          QUERY: [search query]`;
+  }
+
+  private extractToolCall(response: string): { tool: string; query: string } | null {
+    const toolCallMatch = response.match(/TOOL_CALL:\s*(\w+)\s*QUERY:\s*(.+)/i);
+    if (toolCallMatch) {
+      return {
+        tool: toolCallMatch[1].toLowerCase(),
+        query: toolCallMatch[2].trim()
+      };
+    }
+    return null;
+  }
+
+  private async executeTool(toolCall: { tool: string; query: string }): Promise<string> {
+    if (toolCall.tool === 'web_search' && this.webSearchService) {
+      console.log('Executing web search for:', toolCall.query);
+      const results = await this.webSearchService.search(toolCall.query);
+      const formattedResults = this.webSearchService.formatResultsForAI(results);
+      return formattedResults;
+    }
+
+    return 'Tool not available or not recognized.';
+  }
+
+  private async *createAsyncIterable(chunks: string[]): AsyncIterable<string> {
+    for (const chunk of chunks) {
+      yield chunk;
+    }
   }
 
   private async *parseStream(body: ReadableStream): AsyncIterable<string> {

@@ -13,7 +13,7 @@ export const useStreamingMessage = () => {
   const streamBufferRef = useRef<string>('');
   const currentStreamingIdRef = useRef<string | null>(null);
 
-  const startStreaming = useCallback(async (message: string, options?: ChatOptions) => {
+  const startStreaming = useCallback(async (message: string, options?: ChatOptions, enableWebSearch?: boolean) => {
     try {
       setIsStreaming(true);
       streamBufferRef.current = '';
@@ -35,9 +35,15 @@ export const useStreamingMessage = () => {
       currentStreamingIdRef.current = assistantMessageId;
 
       // Register message handlers
-      const handleResponseStart = () => {
-        console.log('Response started');
-      };
+       const handleResponseStart = (data: { webSearchUsed?: boolean }) => {
+         console.log('Response started, web search used:', data.webSearchUsed);
+         // Store web search flag for when response ends
+         if (data.webSearchUsed && currentStreamingIdRef.current) {
+           updateMessage(currentStreamingIdRef.current, {
+             webSearchUsed: true,
+           });
+         }
+       };
 
       const handleResponseChunk = (data: { content?: string }) => {
         if (data.content && currentStreamingIdRef.current) {
@@ -92,7 +98,7 @@ export const useStreamingMessage = () => {
       onMessage('error', handleError);
 
       // Send the message
-      sendMessage(message, options);
+      sendMessage(message, options, enableWebSearch);
 
     } catch (error) {
       console.error('Failed to start streaming:', error);

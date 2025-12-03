@@ -125,7 +125,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, [setConnectionState]);
 
-  const sendMessage = useCallback((message: string, options?: ChatOptions) => {
+  const sendMessage = useCallback((message: string, options?: ChatOptions, enableWebSearch?: boolean) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       throw new Error('Not connected to server');
     }
@@ -133,7 +133,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     wsRef.current.send(JSON.stringify({
       type: 'message',
       message,
-      options
+      options,
+      enableWebSearch
     }));
   }, []);
 

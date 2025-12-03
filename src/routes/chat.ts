@@ -1,7 +1,18 @@
 import { Elysia } from 'elysia';
 import { LlamaService } from '../services/llama-service';
+import { WebSearchService } from '../services/web-search-service';
 
 const llamaService = new LlamaService();
+const webSearchService = new WebSearchService({
+  maxResults: 5,
+  searchType: 'auto',
+  livecrawl: 'fallback',
+  cacheEnabled: true,
+  cacheTTL: 30
+});
+
+// Connect web search service to llama service
+llamaService.setWebSearchService(webSearchService);
 
 export const chatRoutes = new Elysia({ prefix: '/api/chat' })
   .ws('/ws', {
@@ -81,20 +92,21 @@ async function handleMessage(ws: any, data: any) {
   }
 
   try {
-    const { message, options } = data;
-    
+    const { message, options, enableWebSearch = false } = data;
+
     // Send user message confirmation
     ws.send(JSON.stringify({
       type: 'message_received',
       message: 'Message received, processing...'
     }));
 
-    // Stream response from llama.cpp
-    const stream = await (ws as any).data.llamaService.sendMessage(message, options);
-    
+    // Stream response from llama.cpp with web search support
+    const stream = await (ws as any).data.llamaService.sendMessage(message, options, enableWebSearch);
+
     ws.send(JSON.stringify({
       type: 'response_start',
-      message: ''
+      message: '',
+      webSearchUsed: enableWebSearch
     }));
 
     for await (const chunk of stream) {
@@ -106,7 +118,8 @@ async function handleMessage(ws: any, data: any) {
 
     ws.send(JSON.stringify({
       type: 'response_end',
-      message: 'Response complete'
+      message: 'Response complete',
+      webSearchUsed: enableWebSearch
     }));
   } catch (error) {
     console.error('Message handling error:', error);
